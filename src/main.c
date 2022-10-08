@@ -95,6 +95,22 @@ int main(int argc, char const *argv[])
     glGenerateMipmap(GL_TEXTURE_2D);
     stbi_image_free(data);
 
+    mat4 projection;
+    glm_mat4_copy(GLM_MAT4_IDENTITY, projection);
+
+    glm_perspective(
+        M_PI / 4.0f, 640.0f / 480.0f, 0.1f, 100.0f, projection);
+
+    mat4 model;
+    glm_mat4_copy(GLM_MAT4_IDENTITY, model);
+
+    glm_rotate(
+        model, M_PI / 180.0f * -55.0f, (vec3){1.0f, 0.0f, 0.0f});
+
+    mat4 view;
+    glm_mat4_copy(GLM_MAT4_IDENTITY, view);
+    glm_translate(view, (vec3){0.0f, 0.0f, -3.0f});
+
     float vertices[] = {
          0.5f,  0.5f, 0.0f,  1.0f, 0.0f, 0.0f,  1.0f, 1.0f,
          0.5f, -0.5f, 0.0f,  0.0f, 1.0f, 0.0f,  1.0f, 0.0f,
@@ -218,29 +234,21 @@ int main(int argc, char const *argv[])
             shader_program, "ourColor");*/
         shader_use(program);
 
-        mat4 transform;
-        glm_mat4_copy(GLM_MAT4_IDENTITY, transform);
-
-
-        vec3 axis = {
-            0.0, 0.0, 1.0
-        };
-        glm_rotate(
-            transform, 
-            M_PI * 2.0f / 12.0f * SDL_GetTicks() / 1000.0f, 
-            axis);
-
-        vec3 translate = {
-            0.5f, 0.0f, 0.0f
-        };
-        glm_translate(transform, translate);
-
-        unsigned int transform_location = glGetUniformLocation(
-            program.id, "transform");
+        int model_location = glGetUniformLocation(
+            program.id, "model");
         glUniformMatrix4fv(
-            transform_location, 1, GL_FALSE, (float *)transform);
+            model_location, 1, GL_FALSE, (float *)model);
 
-        shader_set_vec3f(program, "offset", offsetx, offsety, 0.0f);
+        int view_location = glGetUniformLocation(
+            program.id, "view");
+        glUniformMatrix4fv(
+            view_location, 1, GL_FALSE, (float *)view);
+
+        int projection_location = glGetUniformLocation(
+            program.id, "projection");
+        glUniformMatrix4fv(
+            projection_location, 1, GL_FALSE, (float *)projection);
+
 /*        glUniform4f(
             vertex_color_location, 0.0f, green, 0.0f, 1.0f);*/
         glActiveTexture(GL_TEXTURE0);
@@ -250,6 +258,7 @@ int main(int argc, char const *argv[])
         glBindVertexArray(vao);
         /*glDrawArrays(GL_TRIANGLES, 0, 3);*/
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
         SDL_GL_SwapWindow(window);
     }
     return 0;
