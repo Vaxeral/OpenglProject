@@ -1,0 +1,1 @@
+generate vertices from a 3d array of block ids

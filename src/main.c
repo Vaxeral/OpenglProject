@@ -36,7 +36,7 @@ int main(int argc, char const *argv[])
         "", 
         SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 
         640, 480, 
-        SDL_WINDOW_OPENGL);
+        SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
     SDL_ASSERT(window);
     SDL_AddEventWatch(on_window_resize, window);
     SDL_GLContext gl_context = SDL_GL_CreateContext(window);
@@ -49,7 +49,8 @@ int main(int argc, char const *argv[])
     glGetIntegerv(GL_MAX_VERTEX_ATTRIBS, &nattribute);
     fprintf(stderr, "max attributes: %d\n", nattribute);
     glViewport(0, 0, 640, 480);
-    
+    glEnable(GL_DEPTH_TEST);
+
     stbi_set_flip_vertically_on_load(1);
 
     int width, height, channels;
@@ -63,7 +64,7 @@ int main(int argc, char const *argv[])
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
     glTexParameteri(
-        GL_TEXTURE_2D, 
+        GL_TEXTURE_2D,
         GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(
         GL_TEXTURE_2D, 
@@ -104,30 +105,58 @@ int main(int argc, char const *argv[])
     mat4 model;
     glm_mat4_copy(GLM_MAT4_IDENTITY, model);
 
-    glm_rotate(
-        model, M_PI / 180.0f * -55.0f, (vec3){1.0f, 0.0f, 0.0f});
-
     mat4 view;
     glm_mat4_copy(GLM_MAT4_IDENTITY, view);
     glm_translate(view, (vec3){0.0f, 0.0f, -3.0f});
 
     float vertices[] = {
-         0.5f,  0.5f, 0.0f,  1.0f, 0.0f, 0.0f,  1.0f, 1.0f,
-         0.5f, -0.5f, 0.0f,  0.0f, 1.0f, 0.0f,  1.0f, 0.0f,
-        -0.5f, -0.5f, 0.0f,  0.0f, 0.0f, 1.0f,  0.0f, 0.0f,
-        -0.5f,  0.5f, 0.0f,  1.0f, 0.0f, 1.0f,  0.0f, 1.0f
+        -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
+         0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
+         0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+         0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
+
+        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+         0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+         0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
+         0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
+        -0.5f,  0.5f,  0.5f,  0.0f, 1.0f,
+        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+
+        -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+        -0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+        -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+
+         0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+         0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+         0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+         0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+         0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+         0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+
+        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+         0.5f, -0.5f, -0.5f,  1.0f, 1.0f,
+         0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+         0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+
+        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
+         0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+         0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+         0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+        -0.5f,  0.5f,  0.5f,  0.0f, 0.0f,
+        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f
     };
     
-
-    float texture_coordinates[] = {
-    };
     unsigned int indices[] = {
         0, 1, 3,
         1, 2, 3
     };
-    unsigned int vao;
-    glGenVertexArrays(1, &vao);
-    glBindVertexArray(vao);
 
     unsigned int ebo;
     glGenBuffers(1, &ebo);
@@ -137,6 +166,10 @@ int main(int argc, char const *argv[])
         sizeof(indices), 
         indices, 
         GL_STATIC_DRAW);
+
+    unsigned int vao;
+    glGenVertexArrays(1, &vao);
+    glBindVertexArray(vao);
 
     unsigned int vbo;
     glGenBuffers(1, &vbo);
@@ -151,24 +184,24 @@ int main(int argc, char const *argv[])
         "res/vertex.vert", "res/fragment.frag");
 
     glVertexAttribPointer(
-        0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
+        0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(
         1, 
-        3, 
+        2, 
         GL_FLOAT, 
         GL_FALSE, 
-        8 * sizeof(float), 
+        5 * sizeof(float), 
         (void *)(3 * sizeof(float)));
     glEnableVertexAttribArray(1);
-    glVertexAttribPointer(
+/*    glVertexAttribPointer(
         2, 
         2, 
         GL_FLOAT, 
         GL_FALSE, 
         8 * sizeof(float), 
         (void *)(6 * sizeof(float)));
-    glEnableVertexAttribArray(2);
+    glEnableVertexAttribArray(2);*/
 
     shader_use(program);
     shader_set_int(program, "texture1", 0);
@@ -182,6 +215,8 @@ int main(int argc, char const *argv[])
     int quit = 0;
     while(!quit)
     {
+        Uint32 start = SDL_GetTicks();
+
         SDL_Event event;
         while(SDL_PollEvent(&event))
         {
@@ -227,7 +262,7 @@ int main(int argc, char const *argv[])
             quit = 1;
         }
         glClearColor(1.0f, 0.3f, 0.3f, 0.0f);
-        glClear(GL_COLOR_BUFFER_BIT);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         int ticks = SDL_GetTicks();
         float green = (sin(ticks / 1000.0f) / 2.0f) + 0.5f;
 /*        int vertex_color_location = glGetUniformLocation(
@@ -236,6 +271,15 @@ int main(int argc, char const *argv[])
 
         int model_location = glGetUniformLocation(
             program.id, "model");
+
+
+        glm_mat4_copy(GLM_MAT4_IDENTITY, model);
+
+        glm_rotate(
+            model, 
+            (SDL_GetTicks() / 1000.0f) * M_PI / 180.0f * 50.0f, 
+            (vec3){0.5f, 1.0f, 0.0f});
+
         glUniformMatrix4fv(
             model_location, 1, GL_FALSE, (float *)model);
 
@@ -257,7 +301,7 @@ int main(int argc, char const *argv[])
         glBindTexture(GL_TEXTURE_2D, texture2);
         glBindVertexArray(vao);
         /*glDrawArrays(GL_TRIANGLES, 0, 3);*/
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+        glDrawArrays(GL_TRIANGLES, 0, 36);
 
         SDL_GL_SwapWindow(window);
     }
