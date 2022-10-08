@@ -1,3 +1,13 @@
+/*
+    Visualize dot product in opengl.
+*/
+
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
+
+#include "shader.h"
+#include <cglm/cglm.h>
+
 #include <glad/glad.h>
 #include <SDL2/SDL.h>
 #include <stdio.h>
@@ -39,11 +49,61 @@ int main(int argc, char const *argv[])
     glGetIntegerv(GL_MAX_VERTEX_ATTRIBS, &nattribute);
     fprintf(stderr, "max attributes: %d\n", nattribute);
     glViewport(0, 0, 640, 480);
+    
+    stbi_set_flip_vertically_on_load(1);
+
+    int width, height, channels;
+    unsigned char *data = stbi_load(
+        "res/container.jpg", &width, &height, &channels, 0);
+    assert(data);
+
+    unsigned int texture;
+    glGenTextures(1, &texture);
+    glBindTexture(GL_TEXTURE_2D, texture);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(
+        GL_TEXTURE_2D, 
+        GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(
+        GL_TEXTURE_2D, 
+        GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexImage2D(
+        GL_TEXTURE_2D, 0, GL_RGB, 
+        width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+    glGenerateMipmap(GL_TEXTURE_2D);
+    stbi_image_free(data);
+
+    data = stbi_load(
+        "res/awesomeface.png", &width, &height, &channels, 0);
+    assert(data);
+
+    unsigned int texture2;
+    glGenTextures(1, &texture2);
+    glBindTexture(GL_TEXTURE_2D, texture2);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(
+        GL_TEXTURE_2D, 
+        GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    glTexParameteri(
+        GL_TEXTURE_2D, 
+        GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexImage2D(
+        GL_TEXTURE_2D, 0, GL_RGB, 
+        width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+    glGenerateMipmap(GL_TEXTURE_2D);
+    stbi_image_free(data);
+
     float vertices[] = {
-         0.5f,  0.5f, 0.0f,
-         0.5f, -0.5f, 0.0f,
-        -0.5f, -0.5f, 0.0f,
-        -0.5f,  0.5f, 0.0f
+         0.5f,  0.5f, 0.0f,  1.0f, 0.0f, 0.0f,  1.0f, 1.0f,
+         0.5f, -0.5f, 0.0f,  0.0f, 1.0f, 0.0f,  1.0f, 0.0f,
+        -0.5f, -0.5f, 0.0f,  0.0f, 0.0f, 1.0f,  0.0f, 0.0f,
+        -0.5f,  0.5f, 0.0f,  1.0f, 0.0f, 1.0f,  0.0f, 1.0f
+    };
+    
+
+    float texture_coordinates[] = {
     };
     unsigned int indices[] = {
         0, 1, 3,
@@ -71,70 +131,36 @@ int main(int argc, char const *argv[])
         vertices, 
         GL_STATIC_DRAW);
     
-    FILE *file = fopen("res/vertex.glsl", "r");
-    assert(file);
-    char buffer[512] = {0};
-    int count = fread(buffer, 1, 512, file);
-    fclose(file);
-    buffer[count] = '\0';
-    const char *str = buffer;
-    unsigned int vertex_shader;
-    vertex_shader = glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(vertex_shader, 1, &str, NULL);
-    glCompileShader(vertex_shader);
-    char info_log[512];
-    glGetShaderiv(vertex_shader, GL_COMPILE_STATUS, &success);
-    if(!success)
-    {
-        glGetShaderInfoLog(vertex_shader, 512, NULL, info_log);
-        fprintf(
-            stderr, 
-            "%s:%d: shader error: %s\n", 
-            __FILE__, __LINE__, info_log);
-        abort();
-    }
-    file = fopen("res/fragment.glsl", "r");
-    assert(file);
-    count = fread(buffer, 1, 512, file);
-    fclose(file);
-    buffer[count] = '\0';
-    str = buffer;
-    unsigned int fragment_shader;
-    fragment_shader = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(fragment_shader, 1, &str, NULL);
-    glCompileShader(fragment_shader);
-    glGetShaderiv(fragment_shader, GL_COMPILE_STATUS, &success);
-    if(!success)
-    {
-        glGetShaderInfoLog(fragment_shader, 512, NULL, info_log);
-        fprintf(
-            stderr, 
-            "%s:%d: shader error: %s\n", 
-            __FILE__, __LINE__, info_log);
-        abort();
-    }
-
-    unsigned int shader_program;
-    shader_program = glCreateProgram();
-    glAttachShader(shader_program, vertex_shader);
-    glAttachShader(shader_program, fragment_shader);
-    glLinkProgram(shader_program);
-    glGetProgramiv(shader_program, GL_LINK_STATUS, &success);
-    if(!success)
-    {
-        glGetProgramInfoLog(shader_program, 512, NULL, info_log);
-        fprintf(
-            stderr, 
-            "%s:%d: shader error: %s\n", 
-            __FILE__, __LINE__, info_log);
-        abort();
-    }
-    glDeleteShader(vertex_shader);
-    glDeleteShader(fragment_shader);
+    ShaderProgram program = shader_create(
+        "res/vertex.vert", "res/fragment.frag");
 
     glVertexAttribPointer(
-        0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+        0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
+    glVertexAttribPointer(
+        1, 
+        3, 
+        GL_FLOAT, 
+        GL_FALSE, 
+        8 * sizeof(float), 
+        (void *)(3 * sizeof(float)));
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(
+        2, 
+        2, 
+        GL_FLOAT, 
+        GL_FALSE, 
+        8 * sizeof(float), 
+        (void *)(6 * sizeof(float)));
+    glEnableVertexAttribArray(2);
+
+    shader_use(program);
+    shader_set_int(program, "texture1", 0);
+    shader_set_int(program, "texture2", 1);
+
+
+    float offsetx, offsety;
+    offsetx = offsety = 0;
 
     const Uint8 *keyboard_state = SDL_GetKeyboardState(NULL);
     int quit = 0;
@@ -163,6 +189,20 @@ int main(int argc, char const *argv[])
                     glPolygonMode(
                         GL_FRONT_AND_BACK, mode);
                 }
+                switch (event.key.keysym.sym) {
+                    case SDLK_DOWN:
+                    offsety -= 1.0f / 480.0f;
+                    break;
+                    case SDLK_UP:
+                    offsety += 1.0f / 480.0f;
+                    break;
+                    case SDLK_LEFT:
+                    offsetx -= 1.0f / 640.0f;
+                    break;
+                    case SDLK_RIGHT:
+                    offsetx += 1.0f / 640.0f;
+                    break;
+                }
                 break;
             }
         }
@@ -174,11 +214,39 @@ int main(int argc, char const *argv[])
         glClear(GL_COLOR_BUFFER_BIT);
         int ticks = SDL_GetTicks();
         float green = (sin(ticks / 1000.0f) / 2.0f) + 0.5f;
-        int vertex_color_location = glGetUniformLocation(
-            shader_program, "ourColor");
-        glUseProgram(shader_program);
-        glUniform4f(
-            vertex_color_location, 0.0f, green, 0.0f, 1.0f);
+/*        int vertex_color_location = glGetUniformLocation(
+            shader_program, "ourColor");*/
+        shader_use(program);
+
+        mat4 transform;
+        glm_mat4_copy(GLM_MAT4_IDENTITY, transform);
+
+
+        vec3 axis = {
+            0.0, 0.0, 1.0
+        };
+        glm_rotate(
+            transform, 
+            M_PI * 2.0f / 12.0f * SDL_GetTicks() / 1000.0f, 
+            axis);
+
+        vec3 translate = {
+            0.5f, 0.0f, 0.0f
+        };
+        glm_translate(transform, translate);
+
+        unsigned int transform_location = glGetUniformLocation(
+            program.id, "transform");
+        glUniformMatrix4fv(
+            transform_location, 1, GL_FALSE, (float *)transform);
+
+        shader_set_vec3f(program, "offset", offsetx, offsety, 0.0f);
+/*        glUniform4f(
+            vertex_color_location, 0.0f, green, 0.0f, 1.0f);*/
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, texture);
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, texture2);
         glBindVertexArray(vao);
         /*glDrawArrays(GL_TRIANGLES, 0, 3);*/
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
