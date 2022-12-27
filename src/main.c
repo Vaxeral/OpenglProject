@@ -13,6 +13,24 @@
 #include <stdio.h>
 #include <assert.h>
 
+float *generate_vertices(int *chunk, int width, int height, int depth)
+{
+    for(int i = 0; i < width; i++)
+    {
+        for(int j = 0; j < height; ++j)
+        {
+            for(int k = 0; k < height; ++k)
+            {
+                int index = i + j * width + k * width * height;
+                if(chunk[index])
+                {
+                    
+                }
+            }
+        }
+    }
+}
+
 #define SDL_ASSERT(assertion) \
 (assertion) ? \
     (void)0 : \
@@ -206,6 +224,14 @@ int main(int argc, char const *argv[])
     shader_use(program);
     shader_set_int(program, "texture1", 0);
     shader_set_int(program, "texture2", 1);
+    int location = glGetUniformLocation(program.id, "texture_coords");
+    float texture_coords[4 * 4] = {
+        0.0, 0.0, 0.5, 0.5,
+        0.5, 0.0, 0.5, 0.5,
+        0.5, 0.5, 0.5, 0.5,
+        0.0, 0.5, 0.5, 0.5
+    };
+    glUniform4fv(program.id, 4, texture_coords);
 
 
     float offsetx, offsety;
